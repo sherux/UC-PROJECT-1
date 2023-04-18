@@ -1,0 +1,15 @@
+{
+  "invalidUrlMessage": "Please check your url....!",
+  "readIdMessage": "Fetch  data By ID successfull....!",
+  "readMessage": "Fetch data successfull....!",
+  "insertedMessage": "Created successfully....!",
+  "updatedMessage": "Updated successfully....!",
+  "deletedMessage": "Deleted successfully....!",
+  "dataNotFound": "Sorry,Data not found ",
+  "invalidDataInserted": "Please validate your inserted data",
+  "somethingWentWrong": "Something went wrong",
+  "filevalidationfortrunk": "only ctr extension file required ",
+  "createdCSV": "file create successfully..!",
+  "fileSizeInvalid": "file exceeding limit 2 MB",
+  "filevalidationforuser": "only png extension file required "
+}
