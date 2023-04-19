@@ -1,5 +1,5 @@
 const ObjectsToCsv = require("objects-to-csv");
-const { BASEPATH, csvPath } = require("../util/path");
+const { BASEPATH, csvPath } = require("./path1");
 const { validationResult, param } = require("express-validator");
 const moment = require("moment");
 

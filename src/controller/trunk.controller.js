@@ -4,7 +4,7 @@ const msg = require("../util/message.json");
 const fs = require("fs");
 const moment = require("moment");
 require("dotenv").config();
-const { imagePath, csvPath, csvurl, imagurl } = require("../util/path");
+const { imagePath, csvurl, imagurl } = require("../util/path1");
 const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 // ----------------------------------export csv file--------------------------
 const exportCSV = async (req, res, next) => {
@@ -353,11 +353,12 @@ const deleteTrunkData = async (req, res) => {
       });
     if (checkid.dataValues.file) {
       const path = imagePath;
+      console.log(imagePath, "UYGUVGUH", checkid.dataValues.file);
       fs.unlink(path + checkid.dataValues.file, (err) => {
         if (err) console.log("object", err);
       });
     }
-    console.log(PATH);
+    // console.log(PATH);
     // return false;
     const deletedTrunkData = await TRUNK.destroy({
       where: { trunk_id: trunkId },

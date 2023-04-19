@@ -5,7 +5,7 @@ const sequelize = require("../util/db");
 const msg = require("../util/message.json");
 require("dotenv").config();
 const moment = require("moment");
-const { csvurl } = require("../util/path");
+const { csvurl } = require("../util/path1");
 const fs = require("fs");
 const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 // ----------------------------------export csv file--------------------------
@@ -16,7 +16,7 @@ const exportCSV = async (req, res, next) => {
       return e.dataValues;
     });
     const filename =
-      moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + "trunkgroup";
+      moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + "_trunkgroup";
     await createCSV(toCreateCSV, filename);
     res.status(200).json({
       status: 200,

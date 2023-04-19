@@ -4,7 +4,7 @@ const SUPERVISOR = require("../model/supervisor.model");
 const msg = require("../util/message.json");
 require("dotenv").config();
 const moment = require("moment");
-const { csvurl } = require("../util/path");
+const { csvurl } = require("../util/path1");
 
 const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 
@@ -65,26 +65,21 @@ const getSerachData = async (req, res) => {
     let { limit, page_no } = req.query;
     if (!limit) limit = 8;
     if (!page_no) page_no = 0;
-    // const fieldvalue = req.query.fieldvalue;
+    const fieldvalue = req.query.fieldvalue;
 
     const alldata = await SUPERVISOR.findAll({
       offset: page_no * limit,
       limit: +limit,
     });
-    if (
-      req.body.first_name ||
-      req.body.last_name ||
-      req.body.email ||
-      req.body.username
-    ) {
+    if (fieldvalue) {
       const { count } = await SUPERVISOR.findAndCountAll({
         // order: [[column_name, "DESC"]],
         where: {
           [Op.or]: [
-            { first_name: { [Op.like]: `%${req.body.first_name}%` } },
-            { last_name: { [Op.like]: `%${req.body.last_name}%` } },
-            { email: { [Op.like]: `%${req.body.email}%` } },
-            { username: { [Op.like]: `%${req.body.username}%` } },
+            { first_name: { [Op.like]: `%${fieldvalue}%` } },
+            { last_name: { [Op.like]: `%${fieldvalue}%` } },
+            { email: { [Op.like]: `%${fieldvalue}%` } },
+            { username: { [Op.like]: `%${fieldvalue}%` } },
           ],
         },
       });
@@ -93,10 +88,10 @@ const getSerachData = async (req, res) => {
         limit: +limit,
         where: {
           [Op.or]: [
-            { first_name: { [Op.like]: `%${req.body.first_name}%` } },
-            { last_name: { [Op.like]: `%${req.body.last_name}%` } },
-            { email: { [Op.like]: `%${req.body.email}%` } },
-            { username: { [Op.like]: `%${req.body.username}%` } },
+            { first_name: { [Op.like]: `%${fieldvalue}%` } },
+            { last_name: { [Op.like]: `%${fieldvalue}%` } },
+            { email: { [Op.like]: `%${fieldvalue}%` } },
+            { username: { [Op.like]: `%${fieldvalue}%` } },
           ],
         },
       });

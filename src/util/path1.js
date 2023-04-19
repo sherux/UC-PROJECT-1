@@ -1,8 +1,8 @@
 const path = require("path");
 require("dotenv");
 const BASEPATH = path.join(__dirname, "..", "..", "uploads/");
-const baseurl = process.env.url;
-console.log(baseurl);
+const baseurl = process.env.BASEURL;
+
 const imagurl = baseurl + "images/";
 const csvurl = baseurl + "csv/";
 

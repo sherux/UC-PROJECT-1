@@ -1,13 +1,12 @@
-const { Op, where } = require("sequelize");
+const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodeMailer = require("nodemailer");
-// const smtpTransport = require(" nodemailer-smtp-transport");
 const smtpTransport = require("nodemailer-smtp-transport");
 
 const USER = require("../model/user.models");
 const { validationResult } = require("express-validator");
-const { PATH, imagePath, imagurl, csvurl } = require("../util/path");
+const { imagePath, imagurl, csvurl } = require("../util/path1");
 const fs = require("fs");
 const moment = require("moment");
 require("dotenv").config();
@@ -51,7 +50,7 @@ const transport = nodeMailer.createTransport(
 );
 
 const sendResetPasswordEmail = async (email, token, otp) => {
-  const resetUrl = `${process.env.url}user/reset-password?token=${token}&email=${email}`;
+  const resetUrl = `${process.env.BASEURL}user/reset-password?token=${token}&email=${email}`;
   // const sendOTP = async((email, otp) => {
   const mailOptions = {
     from: process.env.USER1,

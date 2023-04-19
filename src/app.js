@@ -11,17 +11,12 @@ const PORT = process.env.PORT;
 const fileUpload = require("express-fileupload");
 
 app.use(fileUpload());
-// path.join(__dirname, "..", "uploads");
 
-const { BASEPATH } = require("./util/path");
-// const { csvPATH } = require("./util/path");
+const { BASEPATH } = require("./util/path1");
 
-// console.log(path);
 // -----------------------all routes and middlware----------------
 app.use(express.static(BASEPATH));
-// app.use(express.static(csvPATH));
 
-// console.log(__dirname + "../uploads");
 const agentRoutes = require("../src/routes/agent.routes");
 const planRoutes = require("../src/routes/plan.routes");
 const supervisorRoutes = require("../src/routes/supervisor.routes");
@@ -39,14 +34,6 @@ app.use("/trunkgroup", trunkgroupRoutes);
 app.use("/role", roleRoutes);
 app.use("/module", moduleRoutes);
 app.use("/user", userRoutes);
-
-app.use(agentRoutes);
-app.use(planRoutes);
-app.use(supervisorRoutes);
-app.use(trunkRoutes);
-app.use(roleRoutes);
-app.use(moduleRoutes);
-app.use(userRoutes);
 
 // -----------404 middlware---------
 app.use("*", (req, res) => {
