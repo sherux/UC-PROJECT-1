@@ -1,7 +1,7 @@
 const { Op } = require("sequelize");
 const ROLE = require("../model/role.model");
 const msg = require("../util/message.json");
-const { createCSV } = require("../util/csv");
+const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 
 // ----------------------------get role by id----------------
 const getRoleDataById = async (req, res) => {
@@ -15,6 +15,12 @@ const getRoleDataById = async (req, res) => {
         status: 200,
         message: msg.dataNotFound,
       });
+    RoleALlDataByID.dataValues.createdAt = changeTimeFormat(
+      AgentALlDataByID.dataValues.createdAt
+    );
+    RoleALlDataByID.dataValues.updatedAt = changeTimeFormat(
+      RoleALlDataByID.dataValues.updatedAt
+    );
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
@@ -64,6 +70,7 @@ const getRoleListData = async (req, res) => {
       if (roledata == "") {
         return res.status(200).json({ status: 200, message: msg.dataNotFound });
       } else {
+        await changeTime(roledata);
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
@@ -78,6 +85,7 @@ const getRoleListData = async (req, res) => {
       }
     } else {
       const { count } = await ROLE.findAndCountAll();
+      await changeTime(alldata);
 
       return res.status(200).json({
         status: 200,
@@ -104,7 +112,7 @@ const getRoleListData = async (req, res) => {
 const createRoletData = async (req, res) => {
   try {
     const rolenameexit = await ROLE.findOne({
-      where: { role_name: req.body.role_name },
+      where: { role_name: req.body.roleName },
     });
     if (rolenameexit)
       return res
@@ -112,7 +120,7 @@ const createRoletData = async (req, res) => {
         .json({ status: 400, message: "role_name already exists" });
 
     const createRoletData = new ROLE({
-      role_name: req.body.role_name,
+      role_name: req.body.roleName,
       description: req.body.description,
     });
     const roledata = await createRoletData.save();
@@ -131,9 +139,9 @@ const createRoletData = async (req, res) => {
 //  ------------------create role------------------------
 const updateRoletData = async (req, res) => {
   try {
-    const role_id = req.params.id;
+    const roleId = req.params.id;
     const checkid = await ROLE.findOne({
-      where: { role_id: role_id },
+      where: { role_id: roleId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -143,11 +151,11 @@ const updateRoletData = async (req, res) => {
 
     const updateRoletData = await ROLE.update(
       {
-        role_name: req.body.role_name,
+        role_name: req.body.roleName,
         description: req.body.description,
       },
       {
-        where: { role_id: role_id },
+        where: { role_id: roleId },
       }
     );
     res.status(200).json({
@@ -166,9 +174,9 @@ const updateRoletData = async (req, res) => {
 
 const deleteRoleData = async (req, res) => {
   try {
-    const role_id = req.params.id;
+    const roleId = req.params.id;
     const checkid = await ROLE.findOne({
-      where: { role_id: req.params.id },
+      where: { role_id: roleId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -176,7 +184,7 @@ const deleteRoleData = async (req, res) => {
         message: msg.dataNotFound,
       });
     const deleteRoleData = await ROLE.destroy({
-      where: { role_id: role_id },
+      where: { role_id: roleId },
     });
     res.status(200).json({
       status: 200,

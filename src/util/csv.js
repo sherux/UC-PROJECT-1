@@ -1,10 +1,11 @@
 const ObjectsToCsv = require("objects-to-csv");
-const { filepath } = require("../util/path");
+const { BASEPATH, csvPath } = require("../util/path");
 const { validationResult, param } = require("express-validator");
+const moment = require("moment");
 
 const createCSV = async (obj, filename) => {
   if (obj.length !== 0) {
-    await new ObjectsToCsv(obj).toDisk(filepath + "csv/" + filename + ".csv");
+    await new ObjectsToCsv(obj).toDisk(BASEPATH + "csv/" + filename + ".csv");
   }
 };
 
@@ -34,4 +35,19 @@ const validationInputParam = () => {
   ];
 };
 
-module.exports = { createCSV, handleerror, validationInputParam };
+const changeTimeFormat = (date) => {
+  return moment(date).format("YYYY-MM-DD HH:mm:ss");
+};
+const changeTime = (data) => {
+  return data.map((e) => {
+    e.dataValues.createdAt = changeTimeFormat(e.dataValues.createdAt);
+    e.dataValues.updatedAt = changeTimeFormat(e.dataValues.updatedAt);
+  });
+};
+module.exports = {
+  createCSV,
+  handleerror,
+  validationInputParam,
+  changeTimeFormat,
+  changeTime,
+};

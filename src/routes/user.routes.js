@@ -5,8 +5,9 @@ const { body, param } = require("express-validator");
 const userauth = require("../controller/user.auth");
 
 // --------all routes----------------
-// router.get("/export", agentController.exportCSV);
+router.get("/export", userController.exportCSV);
 router.get("/auth", userauth, userController.auth);
+router.get("/logout", userauth, userController.logout);
 
 router.get("/getusers", userController.getUserDataListData);
 router.get(
@@ -25,21 +26,21 @@ router.delete(
     .withMessage("Please enter a numeric value in id"),
   userController.deleteUserData
 );
-
+// route.post("/",kik)
 router.post(
   "/create",
   [
-    body("first_name")
+    body("firstName")
       .isString()
       .isLength({ min: 3, max: 15 })
       .trim()
       .withMessage("Minimum 3 charactor and maximum 15 allowed in first name"),
-    body("last_name")
+    body("lastName")
       .isString()
       .isLength({ min: 3, max: 15 })
       .trim()
       .withMessage("Minimum 3 charactor and maximum 15 allowed in last name"),
-    body(" date_of_birth")
+    body(" dateOfBirth")
       .custom((value) => {
         if (!value) {
           return true; // if no value, skip validation
@@ -59,8 +60,14 @@ router.post(
     body("email").isEmail().withMessage("email must be a valid email"),
     body("username")
       .isString()
-      .withMessage("username is not allowed to be empty"),
-    body("mobile_no")
+      .isLength({ min: 3, max: 15 })
+      .trim()
+
+      .matches(/^[a-z0-9 ]+$/)
+      .withMessage(
+        "username must be alphanumeric and Minimum 3  or maximum 15  characters allowed"
+      ),
+    body("mobileNo")
       .matches(/^\d{10}$/)
       .withMessage("Mobile number must be exactly 10 digits long"),
     body("status")
@@ -83,7 +90,7 @@ router.post(
         "Password must be greater than 6 and contain at least one uppercase , one lowercase , and one number"
       ),
     body("timezone").isNumeric().withMessage("Input entered in timezome"),
-    body("role_id").isNumeric().withMessage("Input entered in role_id"),
+    body("roleId").isNumeric().withMessage("Input entered in role_id"),
   ],
 
   userController.createUserData
@@ -105,17 +112,17 @@ router.put(
       .isNumeric()
       .withMessage("Please enter a numeric value in id"),
 
-    body("first_name")
+    body("firstName")
       .isString()
       .isLength({ min: 3, max: 15 })
       .trim()
       .withMessage("Minimum 3 charactor and maximum 15 allowed in first name"),
-    body("last_name")
+    body("lastName")
       .isString()
       .isLength({ min: 3, max: 15 })
       .trim()
       .withMessage("Minimum 3 charactor and maximum 15 allowed in last name"),
-    body(" date_of_birth")
+    body(" dateOfBirth")
       .custom((value) => {
         if (!value) {
           return true; // if no value, skip validation
@@ -125,17 +132,23 @@ router.put(
       .withMessage(
         "The 'dateOfBirth' field must be a valid ISO 8601 date string"
       ),
+    body("username")
+      .isString()
+      .isLength({ min: 3, max: 15 })
+      .trim()
 
+      .matches(/^[a-z0-9 ]+$/)
+      .withMessage(
+        "username must be alphanumeric and Minimum 3  or maximum 15  characters allowed"
+      ),
     body("gender")
       .isString()
       .isLength({ min: 1 })
       .trim()
       .matches(/^[MF]$/)
       .withMessage("Input entered in gender must be M or F"),
-    body("username")
-      .isString()
-      .withMessage("username is not allowed to be empty"),
-    body("mobile_no")
+
+    body("mobileNo")
       .matches(/^\d{10}$/)
       .withMessage("Mobile number must be exactly 10 digits long"),
     body("status")
@@ -147,7 +160,7 @@ router.put(
       .isEmpty()
       .withMessage("Address cannot be empty"),
     body("timezone").isNumeric().withMessage("Input entered in timezome id "),
-    body("role_id").isNumeric().withMessage("Input entered in role_id"),
+    body("roleId").isNumeric().withMessage("Input entered in role_id"),
   ],
 
   userController.updateUserData
@@ -155,7 +168,7 @@ router.put(
 router.post(
   "/forget-password",
   [body("email").isEmail().withMessage("email must be a valid email")],
-  userController.userforgetpassword
+  userController.forgetpassword
 );
 router.post(
   "/reset-password",

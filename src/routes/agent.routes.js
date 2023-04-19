@@ -12,17 +12,17 @@ const validatParam = [
 ];
 
 const validatBody = [
-  body("first_name")
+  body("firstName")
     .isString()
     .isLength({ min: 3, max: 15 })
     .trim()
     .withMessage("Minimum 3 characters and maximum 15 allowed in first name"),
-  body("last_name")
+  body("lastName")
     .isString()
     .isLength({ min: 3, max: 15 })
     .trim()
     .withMessage("Minimum 3 characters and maximum 15 allowed in last name"),
-  body("chat_integration")
+  body("chatIntegration")
     .isBoolean()
     .withMessage("Input entered in status must be true or false"),
 
@@ -41,7 +41,7 @@ const validatBody = [
     .withMessage(
       "Password must be greater than 6 and contain at least one uppercase letter, one lowercase letter, and one number"
     ),
-  body("timezone_id")
+  body("timezoneId")
     .isString()
     .withMessage("timezone_id is not allowed to be empty"),
   body("status")

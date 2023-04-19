@@ -2,29 +2,34 @@ const { Op, where } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const nodeMailer = require("nodemailer");
+// const smtpTransport = require(" nodemailer-smtp-transport");
+const smtpTransport = require("nodemailer-smtp-transport");
 
 const USER = require("../model/user.models");
 const { validationResult } = require("express-validator");
-const { filepath } = require("../util/path");
+const { PATH, imagePath, imagurl, csvurl } = require("../util/path");
 const fs = require("fs");
-
+const moment = require("moment");
 require("dotenv").config();
 
 const msg = require("../util/message.json");
-const { createCSV } = require("../util/csv");
+const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
+
 // ----------------------------------export csv file--------------------------
 const exportCSV = async (req, res, next) => {
   try {
-    const data = await AGENT.findAll();
+    const data = await USER.findAll();
     const toCreateCSV = data.map((e) => {
       return e.dataValues;
     });
-    const filename = "agent";
+    // console.log(process.env.url);
+    const filename = moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + "_user";
+
     await createCSV(toCreateCSV, filename);
     res.status(200).json({
       status: 200,
       message: msg.createdCSV,
-      data: process.env.url + "/csv/agent.csv",
+      data: csvurl + "/user.csv",
     });
   } catch (error) {
     console.log("Error", error);
@@ -33,39 +38,40 @@ const exportCSV = async (req, res, next) => {
 };
 
 // ---------------------------send mail------------
-const send = async (user, token) => {
-  try {
-    const transporter = nodeMailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-      requireTLS: true, // use SSL
 
-      auth: {
-        user: process.env.USER1,
-        pass: process.env.PASSWORD,
-      },
-    });
+const transport = nodeMailer.createTransport(
+  smtpTransport({
+    host: "smtp.mailtrap.io",
+    port: 2525,
+    auth: {
+      user: process.env.maitrap_username,
+      pass: process.env.maitrap_password,
+    },
+  })
+);
 
-    const link = `http://172.16.16.182:3333/user/Reset-password?${token}`;
-    console.log(link);
-    const mailoptions = {
-      from: process.env.USER1,
-      to: process.env.USER2,
-      subject: "for Reset password",
-      text: link,
-    };
-    transporter.sendMail(mailoptions, (err, info) => {
-      if (err) {
-        console.log(err.message);
-      } else {
-        console.log("mail has been sent:", info.response);
-      }
-    });
-  } catch (err) {
-    console.log({ message: "email not sent" });
-  }
+const sendResetPasswordEmail = async (email, token, otp) => {
+  const resetUrl = `${process.env.url}user/reset-password?token=${token}&email=${email}`;
+  // const sendOTP = async((email, otp) => {
+  const mailOptions = {
+    from: process.env.USER1,
+    to: process.env.USER2,
+    subject: "Reset your password",
+    html: `
+    <p>Hi,</p>
+    <p>We received a request to reset your password. Please click the link below to reset your password:</p>
+    <a href="${resetUrl}" and>Reset password</a></BR>
+
+    <p>OTP  IS ${otp}</P> 
+
+    <p>If you did not request a password reset, please ignore this email.</p>
+    `,
+  };
+  console.log(mailOptions);
+  await transport.sendMail(mailOptions);
+  // });
 };
+
 // ------------------------authentication api-----------
 const auth = (req, res) => {
   res
@@ -76,15 +82,25 @@ const auth = (req, res) => {
 
 const getUserDataById = async (req, res) => {
   try {
-    const user_id = req.params.id;
+    const userId = req.params.id;
     const getUserDataById = await USER.findOne({
-      where: { user_id: user_id },
+      where: { user_id: userId },
     });
     if (!getUserDataById)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
+    getUserDataById.dataValues.image_profile =
+      imagurl + getUserDataById.dataValues.image_profile;
+
+    getUserDataById.dataValues.createdAt = changeTimeFormat(
+      getUserDataById.dataValues.createdAt
+    );
+    getUserDataById.dataValues.updatedAt = changeTimeFormat(
+      getUserDataById.dataValues.updatedAt
+    );
+
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
@@ -119,7 +135,7 @@ const getUserDataListData = async (req, res) => {
           ],
         },
       });
-      const agentdata = await USER.findAll({
+      const userdata = await USER.findAll({
         offset: page_no * limit,
         limit: +limit,
 
@@ -133,16 +149,22 @@ const getUserDataListData = async (req, res) => {
         },
       });
 
-      if (agentdata == "") {
+      if (userdata == "") {
         return res.status(200).json({ status: 200, message: msg.dataNotFound });
       } else {
+        await changeTime(userdata);
+        await userdata.forEach((element) => {
+          element.dataValues.image_profile =
+            imagurl + element.dataValues.image_profile;
+        });
+
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
-          data: agentdata,
+          data: userdata,
           pagination: {
             total: count,
-            items_per_page: agentdata.length,
+            items_per_page: userdata.length,
             page: +page_no,
             last_page: Math.ceil(count / limit),
           },
@@ -150,7 +172,12 @@ const getUserDataListData = async (req, res) => {
       }
     } else {
       const { count } = await USER.findAndCountAll();
-      // let pagination;
+
+      await changeTime(alldata);
+      await alldata.forEach((element) => {
+        element.dataValues.image_profile =
+          imagurl + element.dataValues.image_profile;
+      });
       return res.status(200).json({
         status: 200,
         message: msg.readMessage,
@@ -203,14 +230,21 @@ const createUserData = async (req, res) => {
       return res
         .status(400)
         .json({ status: 400, message: "username already exists" });
-
+    const mobileNoexist = await USER.findOne({
+      where: { mobile_no: req.body.mobileNo },
+    });
+    if (mobileNoexist)
+      return res
+        .status(400)
+        .json({ status: 400, message: "mobileNo already exists" });
     if (!req.files) {
       return res
         .status(400)
         .json({ status: 400, message: "You need to choose a file" });
     }
-    console.log(req.files);
-    const file = req.files.image_profile;
+    // console.log(req.files);
+    const file = req.files.imageProfile;
+
     if (!file.name.match(/\.(png)$/)) {
       return res.status(400).json({
         status: 400,
@@ -224,26 +258,26 @@ const createUserData = async (req, res) => {
         message: msg.fileSizeInvalid,
       });
     }
-    console.log(req.body.timezone_id);
-    const file_name = new Date().toISOString() + "-" + file.name;
-    const path = filepath + file_name;
+
+    const fileName = new Date().toISOString() + "-" + file.name;
+    const path = imagePath + fileName;
     await file.mv(path);
     const hashpassword = await bcrypt.hash(req.body.password, 12);
 
     const createUserData = new USER({
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
-      date_of_birth: req.body.date_of_birth,
-      mobile_no: req.body.mobile_no,
+      first_name: req.body.firstName,
+      last_name: req.body.lastName,
+      date_of_birth: req.body.dateOfBirth,
+      mobile_no: req.body.mobileNo,
       gender: req.body.gender,
       address: req.body.address,
       status: req.body.status,
       email: req.body.email,
       username: req.body.username,
       password: hashpassword,
-      role_id: req.body.role_id,
-      image_profile: file_name,
-      permission_list: req.body.permission_list,
+      role_id: req.body.roleId,
+      image_profile: fileName,
+      permission_list: [],
       timezone: req.body.timezone,
     });
     const userdata = await createUserData.save();
@@ -255,7 +289,11 @@ const createUserData = async (req, res) => {
   } catch (error) {
     console.log("Error in posting data", error);
 
-    res.status(500).json({ status: 500, message: msg.somethingWentWrong });
+    res.status(500).json({
+      status: 500,
+      message: msg.somethingWentWrong,
+      data: error.message,
+    });
   }
 };
 
@@ -279,11 +317,11 @@ const userlogindata = async (req, res) => {
     where: { email: req.body.email },
   });
   if (!users)
-    return res.status(400).json({ status: 400, message: "email is not found" });
+    return res.status(400).json({ status: 400, message: "Email is not found" });
   //   password check
   const validpass = await bcrypt.compare(req.body.password, users.password);
   if (!validpass)
-    return res.status(400).json({ status: 400, message: "invalid password" });
+    return res.status(400).json({ status: 400, message: "Invalid password" });
 
   // ------------------------------ USER create token--------------------------------------
 
@@ -294,15 +332,24 @@ const userlogindata = async (req, res) => {
       expiresIn: "4h",
     }
   );
-  console.log(process.env.SECRET_TOKEN);
-  //   token save in database
+
   const data = await USER.update(
     { token: token },
     { where: { user_id: users.user_id } }
   );
-  res
-    .header("user-token", token)
-    .json({ status: 200, message: "login successfully", token: token });
+  const data2 = {
+    first_name: users.first_name,
+    last_name: users.last_name,
+    email: users.email,
+    image_profile: users.image_profile,
+    token: token,
+    permissionList: [],
+  };
+  res.header("user-token", token).json({
+    status: 200,
+    message: "login successfully",
+    data: data2,
+  });
 };
 
 // -------------------------UPDATE USER DATA-----------------------------------
@@ -322,9 +369,9 @@ const updateUserData = async (req, res) => {
         message: problem,
       });
     }
-    const user_id = req.params.id;
+    const userId = req.params.id;
     const checkid = await USER.findOne({
-      where: { user_id: user_id },
+      where: { user_id: userId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -335,21 +382,20 @@ const updateUserData = async (req, res) => {
     if (!req.files) {
       const updateUserData = await USER.update(
         {
-          first_name: req.body.first_name,
-          last_name: req.body.last_name,
-          date_of_birth: req.body.date_of_birth,
-          mobile_no: req.body.mobile_no,
+          first_name: req.body.firstName,
+          last_name: req.body.lastName,
+          date_of_birth: req.body.dateOfBirth,
+          mobile_no: req.body.mobileNo,
           gender: req.body.gender,
           address: req.body.address,
           status: req.body.status,
-
           username: req.body.username,
-          role_id: req.body.role_id,
-          permission_list: req.body.permission_list,
+          role_id: req.body.roleId,
+          permission_list: [],
           timezone: req.body.timezone,
         },
         {
-          where: { user_id: user_id },
+          where: { user_id: userId },
         }
       );
       res.status(200).json({
@@ -364,8 +410,7 @@ const updateUserData = async (req, res) => {
           .status(400)
           .json({ status: 400, message: "You need to choose a file" });
       }
-      console.log(req.files);
-      const file = req.files.image_profile;
+      const file = req.files.imageProfile;
       if (!file.name.match(/\.(png)$/)) {
         return res.status(400).json({
           status: 400,
@@ -378,9 +423,8 @@ const updateUserData = async (req, res) => {
           message: msg.fileSizeInvalid,
         });
       }
-      console.log(req.body.timezone_id);
-      const file_name = new Date().toISOString() + "-" + file.name;
-      const path = filepath + file_name;
+      const fileName = new Date().toISOString() + "-" + file.name;
+      const path = imagePath + fileName;
       await file.mv(path);
       const updateUserData = await USER.update(
         {
@@ -393,12 +437,12 @@ const updateUserData = async (req, res) => {
           status: req.body.status,
           username: req.body.username,
           role_id: req.body.role_id,
-          image_profile: file_name,
-          permission_list: req.body.permission_list,
+          image_profile: fileName,
+          permission_list: [],
           timezone: req.body.timezone,
         },
         {
-          where: { user_id: user_id },
+          where: { user_id: userId },
         }
       );
       res.status(200).json({
@@ -433,23 +477,22 @@ const deleteUserData = async (req, res) => {
         message: problem,
       });
     }
-    const user_id = req.params.id;
+    const userId = req.params.id;
     const checkid = await USER.findOne({
-      where: { user_id: user_id },
+      where: { user_id: userId },
     });
     if (!checkid)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
-    console.log(checkid.dataValues.image_profile);
-    const path = filepath;
+    const path = imagePath;
     fs.unlink(path + checkid.dataValues.image_profile, (err) => {
       if (err) console.log("object", err);
     });
     // return false;
     const deleteUserData = await USER.destroy({
-      where: { user_id: user_id },
+      where: { user_id: userId },
     });
     res.status(200).json({
       status: 200,
@@ -461,8 +504,26 @@ const deleteUserData = async (req, res) => {
     res.status(500).json({ status: 500, message: msg.somethingWentWrong });
   }
 };
+// ----------------------------Logout API--------------
+
+const logout = async (req, res) => {
+  try {
+    const userId = req.users.id; // Assuming you have authenticated the user and have their id in req.user
+
+    // Find the user by id and update their token to null
+    const user = await USER.findOne({ where: { user_id: userId } });
+    user.token = null;
+    await user.save();
+
+    res.status(200).send({ message: "User logged out successfully." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Server error.", DATA: err.message });
+  }
+};
+
 // --------------------USER FORGET PASSWORD--------------------
-const userforgetpassword = async (req, res) => {
+const forgetpassword = async (req, res) => {
   try {
     const errors = validationResult(req);
     let problem = {};
@@ -481,28 +542,37 @@ const userforgetpassword = async (req, res) => {
     const user = await USER.findOne({
       where: { email: req.body.email },
     });
-    // console.log(user);
     if (user) {
       const token = jwt.sign(
-        { user_id: user.user_id, email: user.email },
-        process.env.PASS
+        { id: user.user_id, email: user.email },
+        process.env.SECRET_TOKEN,
+        {
+          expiresIn: "4h",
+        }
       );
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
       const data = await USER.update(
         { token: token },
         { where: { user_id: user.user_id } }
       );
-
-      await send(user.email, token);
-      res.status(200).json({ status: 200, message: "check your email" });
+      user.otp = otp; // add the OTP to the user object
+      await user.save();
+      console.log(otp);
+      await sendResetPasswordEmail(user.email, token, otp);
+      res.status(200).json({
+        status: 200,
+        message: "Link  and otp send in your register Email ",
+      });
     } else {
-      res.status(400).json({ status: 400, message: "email not found" });
+      res.status(400).json({ status: 400, message: "Email not found" });
     }
   } catch (err) {
     console.log(err.message);
     res.status(500).json({ status: 500, message: msg.somethingWentWrong });
   }
 };
+
 // ----------------------------RESET-PASSWQRD API-------------------
 const resetpassword = async (req, res) => {
   try {
@@ -520,25 +590,49 @@ const resetpassword = async (req, res) => {
       });
     }
     const token = req.query.token;
+    const decoded = jwt.verify(token, process.env.SECRET_TOKEN);
+    console.log(decoded.id);
+    const user = await USER.findOne({ where: { user_id: decoded.id } });
+    console.log(user.otp);
+
+    if (user.otp !== req.body.otp) {
+      return res.status(400).json({ status: 400, message: "Invalid OTP." });
+    }
     const tokendata = await USER.findOne({ where: { token: token } });
+
+    // console.log(USER.otp);
+    console.log(tokendata);
     if (tokendata) {
       const password = req.body.password;
-      const newpassword = await bcrypt.hash(password, 12);
-      const usernewdata = await USER.update(
-        { password: newpassword, token: null },
-        { where: { user_id: tokendata.user_id }, returning: true }
-      );
-      console.log(usernewdata, "usernewdata");
-      res.status(200).json({
-        status: 200,
-        message: " password reset succesfully",
-        data: usernewdata,
-      });
+      const confirmation_password = req.body.confirmation_password;
+      if (password === confirmation_password) {
+        const newpassword = await bcrypt.hash(password, 12);
+
+        const usernewdata = await USER.update(
+          { password: newpassword, token: null },
+          { where: { user_id: tokendata.user_id }, returning: true }
+        );
+        user.otp = null;
+        await user.save();
+        res.status(200).json({
+          status: 200,
+          message: " password reset succesfully",
+        });
+      } else {
+        res.status(400).json({
+          status: 400,
+          message: "password and confirmation_password does not match",
+        });
+      }
     } else {
       res.status(400).json({ status: 400, message: "link is expired" });
     }
   } catch (err) {
-    res.status(500).json({ status: 500, message: msg.somethingWentWrong });
+    res.status(500).json({
+      status: 500,
+      message: msg.somethingWentWrong,
+      data: err.message,
+    });
   }
 };
 
@@ -552,5 +646,6 @@ module.exports = {
   userlogindata,
   auth,
   resetpassword,
-  userforgetpassword,
+  forgetpassword,
+  logout,
 };

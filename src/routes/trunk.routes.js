@@ -30,7 +30,7 @@ const validatParam = [
 ];
 
 const validationdata = [
-  body("sip_trunk_name")
+  body("sipTrunkName")
     .isString()
     .isLength({ min: 3, max: 15 })
     .trim()
@@ -40,27 +40,27 @@ const validationdata = [
       "sip_trunk_name must be alphanumeric and Minimum 3  or maximum 15  characters allowed"
     ),
 
-  body("sip_ip")
+  body("sipIp")
     .isString()
     .custom(isValidDomainOrIp2)
     .withMessage("Invalid domain or IP address"),
 
-  body("sip_port")
+  body("sipPort")
     .isInt({ min: 1, max: 65535 })
     .isNumeric()
     .withMessage("Minimum 1 number and maximum 65535 allowed in sip_port"),
 
-  body("sip_protocol")
+  body("sipProtocol")
     .matches(/\b(?:TLS|TCP|UDP)\b/)
     .withMessage("choose one options in  sip_protocol"),
-  body("sip_payload_method")
+  body("sipPayloadMethod")
     .matches(/\b(?:SRTP|RTP)\b/)
     .withMessage("choose one options in  sip_payload_method"),
-  body("proxy_ip")
+  body("proxyIp")
     .isString()
     .custom(isValidDomainOrIp2)
     .withMessage("Invalid domain or IP address"),
-  body("proxy_port")
+  body("proxyPort")
     .isInt({ min: 1, max: 65535 })
     .isNumeric()
     .withMessage("Minimum 1 number and maximum 65535 allowed in sip_port"),

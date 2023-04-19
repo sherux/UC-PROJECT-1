@@ -4,9 +4,10 @@ const TRUNKMAPPING = require("../model/trunk_mapping.model");
 const sequelize = require("../util/db");
 const msg = require("../util/message.json");
 require("dotenv").config();
-
+const moment = require("moment");
+const { csvurl } = require("../util/path");
 const fs = require("fs");
-const { createCSV } = require("../util/csv");
+const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 // ----------------------------------export csv file--------------------------
 const exportCSV = async (req, res, next) => {
   try {
@@ -14,12 +15,13 @@ const exportCSV = async (req, res, next) => {
     const toCreateCSV = data.map((e) => {
       return e.dataValues;
     });
-    const filename = "trunkgroup";
+    const filename =
+      moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + "trunkgroup";
     await createCSV(toCreateCSV, filename);
     res.status(200).json({
       status: 200,
       message: msg.createdCSV,
-      data: url + "/csv/trunkgroup.csv",
+      data: csvurl + "/trunkgroup.csv",
     });
   } catch (error) {
     console.log("Error", error);
@@ -31,15 +33,22 @@ const exportCSV = async (req, res, next) => {
 
 const getTrunkgroupDataById = async (req, res) => {
   try {
-    const trunk_group_id = req.params.id;
+    const trunkGroupId = req.params.id;
     const getTrunkgroupDataById = await TRUNKGROUP.findOne({
-      where: { trunk_group_id: trunk_group_id },
+      where: { trunk_group_id: trunkGroupId },
     });
     if (!getTrunkgroupDataById)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
+    getTrunkgroupDataById.dataValues.createdAt = changeTimeFormat(
+      getTrunkgroupDataById.dataValues.createdAt
+    );
+    getTrunkgroupDataById.dataValues.updatedAt = changeTimeFormat(
+      getTrunkgroupDataById.dataValues.updatedAt
+    );
+
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
@@ -92,6 +101,8 @@ const gettrunkgroupListData = async (req, res) => {
       if (trunkdata == "") {
         return res.status(200).json({ status: 200, message: msg.dataNotFound });
       } else {
+        await changeTime(trunkdata);
+
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
@@ -106,6 +117,7 @@ const gettrunkgroupListData = async (req, res) => {
       }
     } else {
       const { count } = await TRUNKGROUP.findAndCountAll();
+      await changeTime(alldata);
 
       return res.status(200).json({
         status: 200,
@@ -134,13 +146,13 @@ const gettrunkgroupListData = async (req, res) => {
 const createTrunkgroupData = async (req, res) => {
   //   console.log(req.body);
   try {
-    req.body.selected_trunk.forEach(async (val) => {
+    req.body.selectedTrunk.forEach(async (val) => {
       console.log(val.id);
     });
     // console.log(req.body.selected_trunk);
-    if (req.body.selected_trunk.length < 1) {
-      req.body.selected_trunk.forEach(async (val) => {
-        if (req.body.selected_trunk);
+    if (req.body.selectedTrunk.length < 1) {
+      req.body.selectedTrunk.forEach(async (val) => {
+        if (req.body.selectedTrunk);
         return res.status(400).json({ status: 400, message: "not found" });
       });
       return res
@@ -148,7 +160,7 @@ const createTrunkgroupData = async (req, res) => {
         .json({ status: 400, message: "Selected atleast 1 trunk" });
     }
     const exist = await TRUNKGROUP.findOne({
-      where: { trunk_group_name: req.body.trunk_group_name },
+      where: { trunk_group_name: req.body.trunkGroupName },
     });
     if (exist)
       return res
@@ -156,17 +168,17 @@ const createTrunkgroupData = async (req, res) => {
         .json({ status: 400, message: " trunk_group_name already exists" });
 
     const createdTrunkgroupData = new TRUNKGROUP({
-      trunk_group_name: req.body.trunk_group_name,
+      trunk_group_name: req.body.trunkGroupName,
       lcr: req.body.lcr,
       status: req.body.status,
     });
 
     const trunkgroupdata = await createdTrunkgroupData.save();
-    const datavalue = req.body.selected_trunk;
+    const datavalue = req.body.selectedTrunk;
     // console.log(datavalue.length);
 
     datavalue.forEach(async (val) => {
-      // console.log(val);
+      console.log(val);
       const createdMappingData = new TRUNKMAPPING({
         trunk_group_id: trunkgroupdata.dataValues.trunk_group_id,
         t_id: val.id,
@@ -196,18 +208,18 @@ const createTrunkgroupData = async (req, res) => {
 
 const updateTrunkgroupData = async (req, res) => {
   try {
-    console.log(req.body.selected_trunk.length);
-    if (req.body.selected_trunk.length < 1) {
-      req.body.selected_trunk.forEach(async (val) => {
+    console.log(req.body.selectedTrunk.length);
+    if (req.body.selectedTrunk.length < 1) {
+      req.body.selectedTrunk.forEach(async (val) => {
         return res.status(400).json({ status: 400, message: "not found" });
       });
       return res
         .status(400)
         .json({ status: 400, message: "Selected atleast 1 trunk " });
     }
-    const trunk_group_id = req.params.id;
+    const trunkGroupId = req.params.id;
     const checkid = await TRUNKGROUP.findOne({
-      where: { trunk_group_id: req.params.id },
+      where: { trunk_group_id: trunkGroupId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -216,12 +228,12 @@ const updateTrunkgroupData = async (req, res) => {
       });
     const updateTrunkgroupData = await TRUNKGROUP.update(
       {
-        trunk_group_name: req.body.trunk_group_name,
+        trunk_group_name: req.body.trunkGroupName,
         lcr: req.body.lcr,
         status: req.body.status,
       },
       {
-        where: { trunk_group_id: trunk_group_id },
+        where: { trunk_group_id: trunkGroupId },
       }
     );
     res.status(200).json({
@@ -238,7 +250,7 @@ const updateTrunkgroupData = async (req, res) => {
 
 const deleteTrunkgroupData = async (req, res) => {
   try {
-    const trunk_group_id = req.params.id;
+    const trunkGroupId = req.params.id;
     const checkid = await TRUNKGROUP.findOne({
       where: { trunk_group_id: req.params.id },
     });
@@ -250,7 +262,7 @@ const deleteTrunkgroupData = async (req, res) => {
     // console.log(checkid.dataValues.file);
 
     const deleteTrunkgroupData = await TRUNKGROUP.destroy({
-      where: { trunk_group_id: trunk_group_id },
+      where: { trunk_group_id: trunkGroupId },
     });
     res.status(200).json({
       status: 200,
@@ -300,9 +312,9 @@ const getTrunkList = async (req, res) => {
     );
     // console.log(results[0], "khuigff");
 
-    const trunk_group_id = req.params.id;
+    const trunkGroupId = req.params.id;
     const checkid = await TRUNKGROUP.findOne({
-      where: { trunk_group_id: trunk_group_id },
+      where: { trunk_group_id: trunkGroupId },
     });
     if (!checkid)
       return res.status(200).json({

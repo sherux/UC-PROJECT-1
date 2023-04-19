@@ -2,9 +2,9 @@ const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const AGENT = require("../model/agent.model");
 require("dotenv").config();
-
+const moment = require("moment");
 const msg = require("../util/message.json");
-const { createCSV } = require("../util/csv");
+const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 // ----------------------------------export csv file--------------------------
 const exportCSV = async (req, res, next) => {
   try {
@@ -12,7 +12,8 @@ const exportCSV = async (req, res, next) => {
     const toCreateCSV = data.map((e) => {
       return e.dataValues;
     });
-    const filename = "agent";
+    const filename =
+      moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + "_agent";
     await createCSV(toCreateCSV, filename);
     res.status(200).json({
       status: 200,
@@ -28,15 +29,21 @@ const exportCSV = async (req, res, next) => {
 
 const getAgentDataById = async (req, res) => {
   try {
-    const agent_id = req.params.id;
+    const agentId = req.params.id;
     const AgentALlDataByID = await AGENT.findOne({
-      where: { agent_id: agent_id },
+      where: { agent_id: agentId },
     });
     if (!AgentALlDataByID)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
+    AgentALlDataByID.dataValues.createdAt = changeTimeFormat(
+      AgentALlDataByID.dataValues.createdAt
+    );
+    AgentALlDataByID.dataValues.updatedAt = changeTimeFormat(
+      AgentALlDataByID.dataValues.updatedAt
+    );
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
@@ -87,6 +94,7 @@ const getSerachData = async (req, res) => {
       if (agentdata == "") {
         return res.status(200).json({ status: 200, message: msg.dataNotFound });
       } else {
+        await changeTime(agentdata);
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
@@ -102,7 +110,7 @@ const getSerachData = async (req, res) => {
       }
     } else {
       const { count } = await AGENT.findAndCountAll();
-      // let pagination;
+      await changeTime(alldata);
       return res.status(200).json({
         status: 200,
         message: msg.readMessage,
@@ -146,13 +154,13 @@ const createAgentData = async (req, res) => {
     const hashpassword = await bcrypt.hash(req.body.password, 12);
 
     const createdAgentData = new AGENT({
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
-      chat_integration: req.body.chat_integration,
+      first_name: req.body.firstName,
+      last_name: req.body.lastName,
+      chat_integration: req.body.chatIntegration,
       email: req.body.email,
       username: req.body.username,
       password: hashpassword,
-      timezone_id: req.body.timezone_id,
+      timezone_id: req.body.timezoneId,
       status: req.body.status,
       extension: req.body.extension,
     });
@@ -174,9 +182,9 @@ const updateAgentData = async (req, res) => {
   try {
     const hashpassword = await bcrypt.hash(req.body.password, 12);
 
-    const agent_id = req.params.id;
+    const agentId = req.params.id;
     const checkid = await AGENT.findOne({
-      where: { agent_id: req.params.id },
+      where: { agent_id: agentId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -186,18 +194,18 @@ const updateAgentData = async (req, res) => {
 
     const updateAgentdata = await AGENT.update(
       {
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
-        chat_integration: req.body.chat_integration,
+        first_name: req.body.firstName,
+        last_name: req.body.lastName,
+        chat_integration: req.body.chatIntegration,
         email: req.body.email,
         username: req.body.username,
         password: hashpassword,
-        timezone_id: req.body.timezone_id,
+        timezone_id: req.body.timezoneId,
         status: req.body.status,
         extension: req.body.extension,
       },
       {
-        where: { agent_id: agent_id },
+        where: { agent_id: agentId },
       }
     );
     res.status(200).json({
@@ -214,9 +222,9 @@ const updateAgentData = async (req, res) => {
 
 const deleteAgentData = async (req, res) => {
   try {
-    const agent_id = req.params.id;
+    const agentId = req.params.id;
     const checkid = await AGENT.findOne({
-      where: { agent_id: req.params.id },
+      where: { agent_id: agentId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -224,7 +232,7 @@ const deleteAgentData = async (req, res) => {
         message: msg.dataNotFound,
       });
     const deletedAgentData = await AGENT.destroy({
-      where: { agent_id: agent_id },
+      where: { agent_id: agentId },
     });
     res.status(200).json({
       status: 200,

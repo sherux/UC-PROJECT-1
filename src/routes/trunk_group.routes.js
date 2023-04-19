@@ -6,7 +6,7 @@ const { handleerror, validationInputParam } = require("../util/csv");
 
 // Define the custom validator function
 const validationdata = [
-  body("trunk_group_name")
+  body("trunkGroupName")
     .isString()
     .isLength({ min: 3, max: 15 })
     .trim()

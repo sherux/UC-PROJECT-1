@@ -2,11 +2,10 @@ const { Op } = require("sequelize");
 const TRUNK = require("../model/trunk.model");
 const msg = require("../util/message.json");
 const fs = require("fs");
+const moment = require("moment");
 require("dotenv").config();
-
-const { filepath } = require("../util/path");
-const { createCSV } = require("../util/csv");
-const Trunk = require("../model/trunk.model");
+const { imagePath, csvPath, csvurl, imagurl } = require("../util/path");
+const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 // ----------------------------------export csv file--------------------------
 const exportCSV = async (req, res, next) => {
   try {
@@ -14,12 +13,13 @@ const exportCSV = async (req, res, next) => {
     const toCreateCSV = data.map((e) => {
       return e.dataValues;
     });
-    const filename = "trunk";
+    const filename =
+      moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + "_trunk";
     await createCSV(toCreateCSV, filename);
     res.status(200).json({
       status: 200,
       message: msg.createdCSV,
-      data: process.env.url + "/csv/trunk.csv",
+      data: csvurl + "/trunk.csv",
     });
   } catch (error) {
     console.log("Error", error);
@@ -31,15 +31,24 @@ const exportCSV = async (req, res, next) => {
 
 const getTrunkDataById = async (req, res) => {
   try {
-    const trunk_id = req.params.id;
+    const trunkId = req.params.id;
     const TrunkAllDataByID = await TRUNK.findOne({
-      where: { trunk_id: trunk_id },
+      where: { trunk_id: trunkId },
     });
     if (!TrunkAllDataByID)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
+    console.log(TrunkAllDataByID.dataValues.file);
+    TrunkAllDataByID.dataValues.file =
+      imagurl + TrunkAllDataByID.dataValues.file;
+    TrunkAllDataByID.dataValues.createdAt = changeTimeFormat(
+      TrunkAllDataByID.dataValues.createdAt
+    );
+    TrunkAllDataByID.dataValues.updatedAt = changeTimeFormat(
+      TrunkAllDataByID.dataValues.updatedAt
+    );
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
@@ -64,6 +73,7 @@ const getSerachData = async (req, res) => {
       offset: page_no * limit,
       limit: +limit,
     });
+
     if (fieldvalue) {
       const { count } = await TRUNK.findAndCountAll({
         where: {
@@ -93,6 +103,10 @@ const getSerachData = async (req, res) => {
           .status(200)
           .json({ status: 200, message: msg.dataNotFound, data: [] });
       } else {
+        await changeTime(trunkdata);
+        await trunkdata.forEach((element) => {
+          element.dataValues.file = process.env.url + element.dataValues.file;
+        });
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
@@ -107,7 +121,11 @@ const getSerachData = async (req, res) => {
       }
     } else {
       const { count } = await TRUNK.findAndCountAll();
-
+      await changeTime(alldata);
+      await alldata.forEach((element) => {
+        // console.log(element);
+        element.dataValues.file = process.env.url + element.dataValues.file;
+      });
       return res.status(200).json({
         status: 200,
         message: msg.readMessage,
@@ -135,13 +153,13 @@ const getSerachData = async (req, res) => {
 const createTrunkData = async (req, res) => {
   try {
     const exist = await TRUNK.findOne({
-      where: { sip_trunk_name: req.body.sip_trunk_name },
+      where: { sip_trunk_name: req.body.sipTrunkName },
     });
     if (exist)
       return res
         .status(400)
-        .json({ status: 400, message: "sip_trunk_name already exists" });
-    if (req.body.sip_protocol === "TLS") {
+        .json({ status: 400, message: "sipTrunkName already exists" });
+    if (req.body.sipProtocol === "TLS") {
       if (!req.files) {
         return res
           .status(400)
@@ -163,20 +181,21 @@ const createTrunkData = async (req, res) => {
         });
       }
 
-      const file_name = new Date().toISOString() + "-" + file.name;
-      const path = filepath + file_name;
+      const fileName = new Date().toISOString() + "-" + file.name;
+      const path = imagePath + fileName;
+      console.log(imagePath);
       await file.mv(path);
 
       const createdTrunkData = new TRUNK({
-        sip_trunk_name: req.body.sip_trunk_name,
-        sip_ip: req.body.sip_ip,
-        sip_port: req.body.sip_port,
-        sip_protocol: req.body.sip_protocol,
-        sip_payload_method: req.body.sip_payload_method,
-        proxy_ip: req.body.proxy_ip,
-        proxy_port: req.body.proxy_port,
+        sip_trunk_name: req.body.sipTrunkName,
+        sip_ip: req.body.sipIp,
+        sip_port: req.body.sipPort,
+        sip_protocol: req.body.sipProtocol,
+        sip_payload_method: req.body.sipPayloadMethod,
+        proxy_ip: req.body.proxyIp,
+        proxy_port: req.body.proxyPort,
         status: req.body.status,
-        file: file_name,
+        file: fileName,
       });
 
       const trunkdata = await createdTrunkData.save();
@@ -187,13 +206,13 @@ const createTrunkData = async (req, res) => {
       });
     } else {
       const createdTrunkData = new TRUNK({
-        sip_trunk_name: req.body.sip_trunk_name,
-        sip_ip: req.body.sip_ip,
-        sip_port: req.body.sip_port,
-        sip_protocol: req.body.sip_protocol,
-        sip_payload_method: req.body.sip_payload_method,
-        proxy_ip: req.body.proxy_ip,
-        proxy_port: req.body.proxy_port,
+        sip_trunk_name: req.body.sipTrunkName,
+        sip_ip: req.body.sipIp,
+        sip_port: req.body.sipPort,
+        sip_protocol: req.body.sipProtocol,
+        sip_payload_method: req.body.sipPayloadMethod,
+        proxy_ip: req.body.proxyIp,
+        proxy_port: req.body.proxyPort,
         status: req.body.status,
         file: null,
       });
@@ -218,9 +237,9 @@ const createTrunkData = async (req, res) => {
 
 const updateTrunkData = async (req, res) => {
   try {
-    const trunk_id = req.params.id;
+    const trunkId = req.params.id;
     const checkid = await TRUNK.findOne({
-      where: { trunk_id: trunk_id },
+      where: { trunk_id: trunkId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -228,21 +247,21 @@ const updateTrunkData = async (req, res) => {
         message: msg.dataNotFound,
       });
     // -------------file extension check-----------------------------
-    if (req.body.sip_protocol === "TLS") {
+    if (req.body.sipProtocol === "TLS") {
       if (!req.files) {
         const updateTrunkData = await TRUNK.update(
           {
-            sip_trunk_name: req.body.sip_trunk_name,
-            sip_ip: req.body.sip_ip,
-            sip_port: req.body.sip_port,
-            sip_protocol: req.body.sip_protocol,
-            sip_payload_method: req.body.sip_payload_method,
-            proxy_ip: req.body.proxy_ip,
-            proxy_port: req.body.proxy_port,
+            sip_trunk_name: req.body.sipTrunkName,
+            sip_ip: req.body.sipIp,
+            sip_port: req.body.sipPort,
+            sip_protocol: req.body.sipProtocol,
+            sip_payload_method: req.body.sipPayloadMethod,
+            proxy_ip: req.body.proxyIp,
+            proxy_port: req.body.proxyPort,
             status: req.body.status,
           },
           {
-            where: { trunk_id: trunk_id },
+            where: { trunk_id: trunkId },
           }
         );
 
@@ -267,23 +286,23 @@ const updateTrunkData = async (req, res) => {
           message: msg.fileSizeInvalid,
         });
       }
-      const file_name = new Date().toISOString() + "-" + file.name;
-      const path = filepath + file_name;
+      const fileName = new Date().toISOString() + "-" + file.name;
+      const path = imagePath + fileName;
       await file.mv(path);
       const updateTrunkData = await TRUNK.update(
         {
-          sip_trunk_name: req.body.sip_trunk_name,
-          sip_ip: req.body.sip_ip,
-          sip_port: req.body.sip_port,
-          sip_protocol: req.body.sip_protocol,
-          sip_payload_method: req.body.sip_payload_method,
-          proxy_ip: req.body.proxy_ip,
-          proxy_port: req.body.proxy_port,
+          sip_trunk_name: req.body.sipTrunkName,
+          sip_ip: req.body.sipIp,
+          sip_port: req.body.sipPort,
+          sip_protocol: req.body.sipProtocol,
+          sip_payload_method: req.body.sipPayloadMethod,
+          proxy_ip: req.body.proxyIp,
+          proxy_port: req.body.proxyPort,
           status: req.body.status,
-          file: file_name,
+          file: fileName,
         },
         {
-          where: { trunk_id: trunk_id },
+          where: { trunk_id: trunkId },
         }
       );
 
@@ -295,17 +314,17 @@ const updateTrunkData = async (req, res) => {
     } else {
       const updateTrunkData = await TRUNK.update(
         {
-          sip_trunk_name: req.body.sip_trunk_name,
-          sip_ip: req.body.sip_ip,
-          sip_port: req.body.sip_port,
-          sip_protocol: req.body.sip_protocol,
-          sip_payload_method: req.body.sip_payload_method,
-          proxy_ip: req.body.proxy_ip,
-          proxy_port: req.body.proxy_port,
+          sip_trunk_name: req.body.sipTrunkName,
+          sip_ip: req.body.sipIp,
+          sip_port: req.body.sipPort,
+          sip_protocol: req.body.sipProtocol,
+          sip_payload_method: req.body.sipPayloadMethod,
+          proxy_ip: req.body.proxyIp,
+          proxy_port: req.body.proxyPort,
           status: req.body.status,
         },
         {
-          where: { trunk_id: trunk_id },
+          where: { trunk_id: trunkId },
         }
       );
       res.status(200).json({
@@ -323,7 +342,7 @@ const updateTrunkData = async (req, res) => {
 
 const deleteTrunkData = async (req, res) => {
   try {
-    const trunk_id = req.params.id;
+    const trunkId = req.params.id;
     const checkid = await TRUNK.findOne({
       where: { trunk_id: req.params.id },
     });
@@ -333,13 +352,15 @@ const deleteTrunkData = async (req, res) => {
         message: msg.dataNotFound,
       });
     if (checkid.dataValues.file) {
-      const path = filepath;
+      const path = imagePath;
       fs.unlink(path + checkid.dataValues.file, (err) => {
         if (err) console.log("object", err);
       });
     }
+    console.log(PATH);
+    // return false;
     const deletedTrunkData = await TRUNK.destroy({
-      where: { trunk_id: trunk_id },
+      where: { trunk_id: trunkId },
     });
     res.status(200).json({
       status: 200,

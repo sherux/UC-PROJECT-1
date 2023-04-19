@@ -11,11 +11,17 @@ const PORT = process.env.PORT;
 const fileUpload = require("express-fileupload");
 
 app.use(fileUpload());
+// path.join(__dirname, "..", "uploads");
 
-const { filepath } = require("./util/path");
+const { BASEPATH } = require("./util/path");
+// const { csvPATH } = require("./util/path");
+
 // console.log(path);
 // -----------------------all routes and middlware----------------
-app.use(express.static(filepath));
+app.use(express.static(BASEPATH));
+// app.use(express.static(csvPATH));
+
+// console.log(__dirname + "../uploads");
 const agentRoutes = require("../src/routes/agent.routes");
 const planRoutes = require("../src/routes/plan.routes");
 const supervisorRoutes = require("../src/routes/supervisor.routes");
@@ -46,20 +52,6 @@ app.use(userRoutes);
 app.use("*", (req, res) => {
   res.status(404).json({ status: 404, message: "Please check your url" });
 });
-// app.use(function (err, req, res, next) {
-//   app.use(
-//     fileUpload({
-//       limits: {
-//         fileSize: 2000000, //2mb
-//       },
-//       abortOnLimit: true,
-//     })
-//   );
-//   if (err instanceof fileUpload.FileSizeLimitExceededError) {
-//     return res.status(400).json({ error: "File size limit exceeded" });
-//   }
-//   // next(res);
-// });
 
 // ---------------------------DATABASE CONNECTION----------------------
 sequelize

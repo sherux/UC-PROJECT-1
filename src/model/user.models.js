@@ -60,10 +60,15 @@ const USER = sequelize.define("uc_user", {
   },
   permission_list: {
     type: Sequelize.ARRAY(Sequelize.STRING),
+    allowNull: false,
+    defaultValues: "",
+  },
+  token: {
+    type: Sequelize.STRING,
     allowNull: true,
     default: "",
   },
-  token: {
+  otp: {
     type: Sequelize.STRING,
     allowNull: true,
     default: "",

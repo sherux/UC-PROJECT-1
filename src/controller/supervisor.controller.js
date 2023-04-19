@@ -3,8 +3,10 @@ const bcrypt = require("bcryptjs");
 const SUPERVISOR = require("../model/supervisor.model");
 const msg = require("../util/message.json");
 require("dotenv").config();
+const moment = require("moment");
+const { csvurl } = require("../util/path");
 
-const { createCSV } = require("../util/csv");
+const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 
 // ----------------------csv file export----------------
 const exportCSV = async (req, res, next) => {
@@ -13,12 +15,13 @@ const exportCSV = async (req, res, next) => {
     const toCreateCSV = data.map((e) => {
       return e.dataValues;
     });
-    const filename = "supervisor";
+    const filename =
+      moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + "_supervisor";
     await createCSV(toCreateCSV, filename);
     res.status(200).json({
       status: 200,
       message: msg.createdCSV,
-      data: process.env.url + "/csv/supervisor.csv",
+      data: csvurl + "/supervisor.csv",
     });
   } catch (error) {
     console.log("Error", error);
@@ -30,15 +33,21 @@ const exportCSV = async (req, res, next) => {
 
 const getSupervisorDataById = async (req, res) => {
   try {
-    const supervisor_id = req.params.id;
+    const supervisorId = req.params.id;
     const SupervisorALlDataByID = await SUPERVISOR.findOne({
-      where: { supervisor_id: supervisor_id },
+      where: { supervisor_id: supervisorId },
     });
     if (!SupervisorALlDataByID)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
+    SupervisorALlDataByID.dataValues.createdAt = changeTimeFormat(
+      SupervisorALlDataByID.dataValues.createdAt
+    );
+    SupervisorALlDataByID.dataValues.updatedAt = changeTimeFormat(
+      SupervisorALlDataByID.dataValues.updatedAt
+    );
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
@@ -95,6 +104,7 @@ const getSerachData = async (req, res) => {
       if (supervisordata == "") {
         return res.status(200).json({ status: 200, message: msg.dataNotFound });
       } else {
+        await changeTime(supervisordata);
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
@@ -109,6 +119,7 @@ const getSerachData = async (req, res) => {
       }
     } else {
       const { count } = await SUPERVISOR.findAndCountAll();
+      await changeTime(supervisordata);
 
       return res.status(200).json({
         status: 200,
@@ -154,13 +165,13 @@ const createSupervisorData = async (req, res) => {
     const hashpassword = await bcrypt.hash(req.body.password, 12);
 
     const createdSupervisorData = new SUPERVISOR({
-      first_name: req.body.first_name,
-      last_name: req.body.last_name,
-      chat_integration: req.body.chat_integration,
+      first_name: req.body.firstName,
+      last_name: req.body.lastName,
+      chat_integration: req.body.chatIntegration,
       email: req.body.email,
       username: req.body.username,
       password: hashpassword,
-      timezone_id: req.body.timezone_id,
+      timezone_id: req.body.timezoneId,
       status: req.body.status,
       extension: req.body.extension,
     });
@@ -182,9 +193,9 @@ const updateSupervisorData = async (req, res) => {
   try {
     const hashpassword = await bcrypt.hash(req.body.password, 12);
 
-    const supervisor_id = req.params.id;
+    const supervisorId = req.params.id;
     const checkid = await SUPERVISOR.findOne({
-      where: { supervisor_id: req.params.id },
+      where: { supervisor_id: supervisorId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -194,18 +205,18 @@ const updateSupervisorData = async (req, res) => {
 
     const updateSupervisordata = await SUPERVISOR.update(
       {
-        first_name: req.body.first_name,
-        last_name: req.body.last_name,
-        chat_integration: req.body.chat_integration,
+        first_name: req.body.firstName,
+        last_name: req.body.lastName,
+        chat_integration: req.body.chatIntegration,
         email: req.body.email,
         username: req.body.username,
         password: hashpassword,
-        timezone_id: req.body.timezone_id,
+        timezone_id: req.body.timezoneId,
         status: req.body.status,
         extension: req.body.extension,
       },
       {
-        where: { supervisor_id: supervisor_id },
+        where: { supervisor_id: supervisorId },
       }
     );
     res.status(200).json({
@@ -222,9 +233,9 @@ const updateSupervisorData = async (req, res) => {
 
 const deleteSupervisorData = async (req, res) => {
   try {
-    const supervisor_id = req.params.id;
+    const supervisorId = req.params.id;
     const checkid = await SUPERVISOR.findOne({
-      where: { supervisor_id: req.params.id },
+      where: { supervisor_id: supervisorId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -232,7 +243,7 @@ const deleteSupervisorData = async (req, res) => {
         message: msg.dataNotFound,
       });
     const deletedSupervisorData = await SUPERVISOR.destroy({
-      where: { supervisor_id: supervisor_id },
+      where: { supervisor_id: supervisorId },
     });
     res.status(200).json({
       status: 200,

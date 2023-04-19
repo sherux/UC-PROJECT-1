@@ -5,7 +5,7 @@ const { body, param } = require("express-validator");
 const { handleerror, validationInputParam } = require("../util/csv");
 
 const validationResult = [
-  body("role_name")
+  body("roleName")
     .isString()
     .isLength({ min: 3, max: 15 })
     .trim()

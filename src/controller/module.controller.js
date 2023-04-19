@@ -1,21 +1,26 @@
 const { Op } = require("sequelize");
-const ROLE = require("../model/role.model");
 const msg = require("../util/message.json");
-const { createCSV } = require("../util/csv");
+const { createCSV, changeTimeFormat } = require("../util/csv");
 const MODULE = require("../model/module.model");
 
 // ----------------------------get role by id----------------
 const getModuleDataById = async (req, res) => {
   try {
-    const module_id = req.params.id;
+    const moduleId = req.params.id;
     const getModuleDataById = await MODULE.findOne({
-      where: { module_id: module_id },
+      where: { module_id: moduleId },
     });
     if (!getModuleDataById)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
+    getModuleDataById.dataValues.createdAt = changeTimeFormat(
+      getModuleDataById.dataValues.createdAt
+    );
+    getModuleDataById.dataValues.updatedAt = changeTimeFormat(
+      getModuleDataById.dataValues.updatedAt
+    );
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
@@ -64,6 +69,7 @@ const getModuleListData = async (req, res) => {
       if (moduledata == "") {
         return res.status(200).json({ status: 200, message: msg.dataNotFound });
       } else {
+        await changeTime(moduledata);
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
@@ -78,6 +84,7 @@ const getModuleListData = async (req, res) => {
       }
     } else {
       const { count } = await MODULE.findAndCountAll();
+      await changeTime(alldata);
 
       return res.status(200).json({
         status: 200,
@@ -104,14 +111,14 @@ const getModuleListData = async (req, res) => {
 const createModuletData = async (req, res) => {
   try {
     const modulenameexit = await MODULE.findOne({
-      where: { module_name: req.body.module_name },
+      where: { module_name: req.body.moduleName },
     });
     if (modulenameexit)
       return res
         .status(400)
         .json({ status: 400, message: "module_name already exists" });
     const createModuletData = new MODULE({
-      module_name: req.body.module_name,
+      module_name: req.body.moduleName,
     });
     const moduledata = await createModuletData.save();
     res.status(200).json({
@@ -129,9 +136,9 @@ const createModuletData = async (req, res) => {
 //  ------------------create role------------------------
 const updateModuletData = async (req, res) => {
   try {
-    const module_id = req.params.id;
+    const moduleId = req.params.id;
     const checkid = await MODULE.findOne({
-      where: { module_id: module_id },
+      where: { module_id: moduleId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -141,10 +148,10 @@ const updateModuletData = async (req, res) => {
 
     const updateModuletData = await MODULE.update(
       {
-        module_name: req.body.module_name,
+        module_name: req.body.moduleName,
       },
       {
-        where: { module_id: module_id },
+        where: { module_id: moduleId },
       }
     );
     res.status(200).json({
@@ -163,9 +170,9 @@ const updateModuletData = async (req, res) => {
 
 const deleteModuleData = async (req, res) => {
   try {
-    const module_id = req.params.id;
+    const moduleId = req.params.id;
     const checkid = await MODULE.findOne({
-      where: { module_id: module_id },
+      where: { module_id: moduleId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -173,7 +180,7 @@ const deleteModuleData = async (req, res) => {
         message: msg.dataNotFound,
       });
     const deleteModuleData = await MODULE.destroy({
-      where: { module_id: module_id },
+      where: { module_id: moduleId },
     });
     res.status(200).json({
       status: 200,
