@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const roleController = require("../controller/role.controller");
+const roleController = require("../controllers/role.controller");
 const { body, param } = require("express-validator");
 const { handleerror, validationInputParam } = require("../util/csv");
 

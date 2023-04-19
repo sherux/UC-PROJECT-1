@@ -1,30 +1,30 @@
 const { Op } = require("sequelize");
+const ROLE = require("../models/role.model");
 const msg = require("../util/message.json");
-const { createCSV, changeTimeFormat } = require("../util/csv");
-const MODULE = require("../model/module.model");
+const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
 
 // ----------------------------get role by id----------------
-const getModuleDataById = async (req, res) => {
+const getRoleDataById = async (req, res) => {
   try {
-    const moduleId = req.params.id;
-    const getModuleDataById = await MODULE.findOne({
-      where: { module_id: moduleId },
+    const role_id = req.params.id;
+    const RoleALlDataByID = await ROLE.findOne({
+      where: { role_id: role_id },
     });
-    if (!getModuleDataById)
+    if (!RoleALlDataByID)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
-    getModuleDataById.dataValues.createdAt = changeTimeFormat(
-      getModuleDataById.dataValues.createdAt
+    RoleALlDataByID.dataValues.createdAt = changeTimeFormat(
+      AgentALlDataByID.dataValues.createdAt
     );
-    getModuleDataById.dataValues.updatedAt = changeTimeFormat(
-      getModuleDataById.dataValues.updatedAt
+    RoleALlDataByID.dataValues.updatedAt = changeTimeFormat(
+      RoleALlDataByID.dataValues.updatedAt
     );
     return res.status(200).json({
       status: 200,
       message: msg.readIdMessage,
-      data: getModuleDataById,
+      data: RoleALlDataByID,
     });
   } catch (error) {
     console.log("Error", error);
@@ -33,32 +33,33 @@ const getModuleDataById = async (req, res) => {
 };
 
 // ----------------------SEARCH QUERY AND GET ALL AGENT DATA-------------------------
-const getModuleListData = async (req, res) => {
+const getRoleListData = async (req, res) => {
   try {
     let { limit = 5, page_no = 1 } = req.query;
+
     const fieldvalue = req.query.fieldvalue;
 
-    const alldata = await MODULE.findAll({
+    const alldata = await ROLE.findAll({
       offset: page_no * limit,
       limit: +limit,
     });
     if (fieldvalue) {
-      const { count } = await MODULE.findAndCountAll({
+      const { count } = await ROLE.findAndCountAll({
         where: {
           [Op.or]: [
             {
-              module_name: { [Op.like]: `%${fieldvalue}%` },
+              role_name: { [Op.like]: `%${fieldvalue}}%` },
             },
           ],
         },
       });
-      const moduledata = await MODULE.findAll({
+      const roledata = await ROLE.findAll({
         offset: page_no * limit,
         limit: +limit,
         where: {
           [Op.or]: [
             {
-              module_name: {
+              role_name: {
                 [Op.like]: `%${fieldvalue}%`,
               },
             },
@@ -66,24 +67,24 @@ const getModuleListData = async (req, res) => {
         },
       });
 
-      if (moduledata == "") {
+      if (roledata == "") {
         return res.status(200).json({ status: 200, message: msg.dataNotFound });
       } else {
-        await changeTime(moduledata);
+        await changeTime(roledata);
         return res.status(200).json({
           status: 200,
           message: msg.readMessage,
-          data: moduledata,
+          data: roledata,
           pagination: {
             total: count,
-            items_per_page: moduledata.length,
+            items_per_page: roledata.length,
             page: +page_no,
             last_page: Math.ceil(count / limit),
           },
         });
       }
     } else {
-      const { count } = await MODULE.findAndCountAll();
+      const { count } = await ROLE.findAndCountAll();
       await changeTime(alldata);
 
       return res.status(200).json({
@@ -108,23 +109,25 @@ const getModuleListData = async (req, res) => {
   }
 };
 // ------------------create role------------------------
-const createModuletData = async (req, res) => {
+const createRoletData = async (req, res) => {
   try {
-    const modulenameexit = await MODULE.findOne({
-      where: { module_name: req.body.moduleName },
+    const rolenameexit = await ROLE.findOne({
+      where: { role_name: req.body.roleName },
     });
-    if (modulenameexit)
+    if (rolenameexit)
       return res
         .status(400)
-        .json({ status: 400, message: "module_name already exists" });
-    const createModuletData = new MODULE({
-      module_name: req.body.moduleName,
+        .json({ status: 400, message: "role_name already exists" });
+
+    const createRoletData = new ROLE({
+      role_name: req.body.roleName,
+      description: req.body.description,
     });
-    const moduledata = await createModuletData.save();
+    const roledata = await createRoletData.save();
     res.status(200).json({
       status: 200,
       message: msg.insertedMessage,
-      data: moduledata,
+      data: roledata,
     });
   } catch (error) {
     console.log("Error in posting data", error);
@@ -134,11 +137,11 @@ const createModuletData = async (req, res) => {
 };
 
 //  ------------------create role------------------------
-const updateModuletData = async (req, res) => {
+const updateRoletData = async (req, res) => {
   try {
-    const moduleId = req.params.id;
-    const checkid = await MODULE.findOne({
-      where: { module_id: moduleId },
+    const roleId = req.params.id;
+    const checkid = await ROLE.findOne({
+      where: { role_id: roleId },
     });
     if (!checkid)
       return res.status(200).json({
@@ -146,18 +149,19 @@ const updateModuletData = async (req, res) => {
         message: msg.dataNotFound,
       });
 
-    const updateModuletData = await MODULE.update(
+    const updateRoletData = await ROLE.update(
       {
-        module_name: req.body.moduleName,
+        role_name: req.body.roleName,
+        description: req.body.description,
       },
       {
-        where: { module_id: moduleId },
+        where: { role_id: roleId },
       }
     );
     res.status(200).json({
       status: 200,
       message: msg.insertedMessage,
-      data: updateModuletData,
+      data: updateRoletData,
     });
   } catch (error) {
     console.log("Error in posting data", error);
@@ -168,24 +172,24 @@ const updateModuletData = async (req, res) => {
 
 // -----------------------------delete role----------------------
 
-const deleteModuleData = async (req, res) => {
+const deleteRoleData = async (req, res) => {
   try {
-    const moduleId = req.params.id;
-    const checkid = await MODULE.findOne({
-      where: { module_id: moduleId },
+    const roleId = req.params.id;
+    const checkid = await ROLE.findOne({
+      where: { role_id: roleId },
     });
     if (!checkid)
       return res.status(200).json({
         status: 200,
         message: msg.dataNotFound,
       });
-    const deleteModuleData = await MODULE.destroy({
-      where: { module_id: moduleId },
+    const deleteRoleData = await ROLE.destroy({
+      where: { role_id: roleId },
     });
     res.status(200).json({
       status: 200,
       message: msg.deletedMessage,
-      data: deleteModuleData,
+      data: deleteRoleData,
     });
   } catch (error) {
     console.log("error", error);
@@ -193,9 +197,9 @@ const deleteModuleData = async (req, res) => {
   }
 };
 module.exports = {
-  createModuletData,
-  updateModuletData,
-  deleteModuleData,
-  getModuleDataById,
-  getModuleListData,
+  createRoletData,
+  updateRoletData,
+  deleteRoleData,
+  getRoleDataById,
+  getRoleListData,
 };

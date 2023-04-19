@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
-const TRUNKGROUP = require("../model/trunk_group.model");
-const TRUNKMAPPING = require("../model/trunk_mapping.model");
+const TRUNKGROUP = require("../models/trunk_group.model");
+const TRUNKMAPPING = require("../models/trunk_mapping.model");
 const sequelize = require("../util/db");
 const msg = require("../util/message.json");
 require("dotenv").config();

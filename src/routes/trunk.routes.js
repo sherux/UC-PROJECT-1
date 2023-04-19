@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const trunkController = require("../controller/trunk.controller");
+const trunkController = require("../controllers/trunk.controller");
 const { body, param } = require("express-validator");
 const { handleerror } = require("../util/csv");
 

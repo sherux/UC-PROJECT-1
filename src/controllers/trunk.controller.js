@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const TRUNK = require("../model/trunk.model");
+const TRUNK = require("../models/trunk.model");
 const msg = require("../util/message.json");
 const fs = require("fs");
 const moment = require("moment");

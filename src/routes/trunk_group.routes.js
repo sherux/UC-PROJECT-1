@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const trunkgroupController = require("../controller/trunk_group.controller");
+const trunkgroupController = require("../controllers/trunk_group.controller");
 const { body } = require("express-validator");
 const { handleerror, validationInputParam } = require("../util/csv");
 

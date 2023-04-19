@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const USER = require("../model/user.models");
+const USER = require("../models/user.models");
 const permission = require("../models/permission.schema");
 
 // -------------------------------role wise permission API----------------------

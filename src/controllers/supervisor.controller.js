@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
-const SUPERVISOR = require("../model/supervisor.model");
+const SUPERVISOR = require("../models/supervisor.model");
 const msg = require("../util/message.json");
 require("dotenv").config();
 const moment = require("moment");

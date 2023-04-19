@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const PLAN = require("../model/plan.model");
+const PLAN = require("../models/plan.model");
 const { validationResult } = require("express-validator");
 const msg = require("../util/message.json");
 require("dotenv").config();

@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const moduleController = require("../controller/module.controller");
+const moduleController = require("../controllers/module.controller");
 const { body, param, validationResult } = require("express-validator");
 const { handleerror, validationInputParam } = require("../util/csv");
 

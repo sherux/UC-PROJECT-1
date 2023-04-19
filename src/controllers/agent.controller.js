@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
-const AGENT = require("../model/agent.model");
+const AGENT = require("../models/agent.model");
 require("dotenv").config();
 const moment = require("moment");
 const msg = require("../util/message.json");

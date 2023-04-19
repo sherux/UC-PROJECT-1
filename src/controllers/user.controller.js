@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const nodeMailer = require("nodemailer");
 const smtpTransport = require("nodemailer-smtp-transport");
 
-const USER = require("../model/user.models");
+const USER = require("../models/user.models");
 const { validationResult } = require("express-validator");
 const { imagePath, imagurl, csvurl } = require("../util/path1");
 const fs = require("fs");
