@@ -1,18 +1,17 @@
 const { Op } = require("sequelize");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const nodeMailer = require("nodemailer");
-const smtpTransport = require("nodemailer-smtp-transport");
-
 const USER = require("../models/user.models");
 const { validationResult } = require("express-validator");
 const { imagePath, imagurl, csvurl } = require("../util/path1");
 const fs = require("fs");
 const moment = require("moment");
 require("dotenv").config();
-
 const msg = require("../util/message.json");
 const { createCSV, changeTime, changeTimeFormat } = require("../util/csv");
+const {
+  sendResetPasswordEmail,
+} = require("../controllers/nodemailer.controller");
 
 // ----------------------------------export csv file--------------------------
 const exportCSV = async (req, res, next) => {
@@ -37,39 +36,6 @@ const exportCSV = async (req, res, next) => {
 };
 
 // ---------------------------send mail------------
-
-const transport = nodeMailer.createTransport(
-  smtpTransport({
-    host: "smtp.mailtrap.io",
-    port: 2525,
-    auth: {
-      user: process.env.maitrap_username,
-      pass: process.env.maitrap_password,
-    },
-  })
-);
-
-const sendResetPasswordEmail = async (email, token, otp) => {
-  const resetUrl = `${process.env.BASEURL}user/reset-password?token=${token}&email=${email}`;
-  // const sendOTP = async((email, otp) => {
-  const mailOptions = {
-    from: process.env.USER1,
-    to: process.env.USER2,
-    subject: "Reset your password",
-    html: `
-    <p>Hi,</p>
-    <p>We received a request to reset your password. Please click the link below to reset your password:</p>
-    <a href="${resetUrl}" and>Reset password</a></BR>
-
-    <p>OTP  IS ${otp}</P> 
-
-    <p>If you did not request a password reset, please ignore this email.</p>
-    `,
-  };
-  console.log(mailOptions);
-  await transport.sendMail(mailOptions);
-  // });
-};
 
 // ------------------------authentication api-----------
 const auth = (req, res) => {
@@ -114,6 +80,7 @@ const getUserDataById = async (req, res) => {
 // ----------------------SEARCH QUERY AND GET ALL USER DATA-------------------------
 const getUserDataListData = async (req, res) => {
   try {
+    console.log("object");
     let { limit, page_no } = req.query;
     if (!limit) limit = 8;
     if (!page_no) page_no = 0;
@@ -427,15 +394,15 @@ const updateUserData = async (req, res) => {
       await file.mv(path);
       const updateUserData = await USER.update(
         {
-          first_name: req.body.first_name,
-          last_name: req.body.last_name,
-          date_of_birth: req.body.date_of_birth,
-          mobile_no: req.body.mobile_no,
+          first_name: req.body.firstName,
+          last_name: req.body.lastName,
+          date_of_birth: req.body.dateOfBirth,
+          mobile_no: req.body.mobileNo,
           gender: req.body.gender,
           address: req.body.address,
           status: req.body.status,
           username: req.body.username,
-          role_id: req.body.role_id,
+          role_id: req.body.roleId,
           image_profile: fileName,
           permission_list: [],
           timezone: req.body.timezone,
@@ -514,10 +481,16 @@ const logout = async (req, res) => {
     user.token = null;
     await user.save();
 
-    res.status(200).send({ message: "User logged out successfully." });
+    res
+      .status(200)
+      .json({ status: 200, message: "User logged out successfully." });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Server error.", DATA: err.message });
+    res.status(500).json({
+      status: 500,
+      message: msg.somethingWentWrong,
+      data: err.message,
+    });
   }
 };
 

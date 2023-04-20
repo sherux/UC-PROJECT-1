@@ -73,12 +73,7 @@ const validationdata = [
 router.get("/export", trunkController.exportCSV);
 
 router.get("/gettrunks", trunkController.getSerachData);
-router.get(
-  "/trunk/:id",
-  validatParam,
-  handleerror,
-  trunkController.getTrunkDataById
-);
+router.get("/:id", validatParam, handleerror, trunkController.getTrunkDataById);
 router.delete(
   "/delete/:id",
   validatParam,

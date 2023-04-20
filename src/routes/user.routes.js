@@ -7,11 +7,11 @@ const userauth = require("../controllers/user.auth");
 // --------all routes----------------
 router.get("/export", userController.exportCSV);
 router.get("/auth", userauth, userController.auth);
-router.get("/logout", userauth, userController.logout);
+router.post("/logout", userauth, userController.logout);
 
 router.get("/getusers", userController.getUserDataListData);
 router.get(
-  "/user/:id",
+  "/:id",
   param("id")
     .trim()
     .isNumeric()
